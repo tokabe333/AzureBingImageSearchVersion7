@@ -25,10 +25,11 @@ namespace AzureBingImageSearchVersion7 {
 		} //End_Constructor
 		
 		public bool StartSearchAndDownload() {
+			var result = this.Search();
 			return true;
 		} //End_Method
 
-		public SearchResult BingImageSearch() {
+		public SearchResult Search() {
 			// クエリを生成してリクエストしてJSONレスポンスを得る
 			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm);
 			var request = WebRequest.Create(query);
