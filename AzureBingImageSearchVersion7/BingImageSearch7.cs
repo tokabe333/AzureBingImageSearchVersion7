@@ -25,7 +25,14 @@ namespace AzureBingImageSearchVersion7 {
 		} //End_Constructor
 		
 		public bool StartSearchAndDownload() {
+			// 検索結果を取得
 			var result = this.Search();
+
+			dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
+			var firstObj = jsonObj["value"][0];
+			Console.WriteLine("Title : " + firstObj["name"]);
+			Console.WriteLine("URL   : " + firstObj["webSearchUrl"]);
+			Console.WriteLine("URLImg: " + firstObj["contentUrl"]);
 			return true;
 		} //End_Method
 
