@@ -33,9 +33,17 @@ namespace AzureBingImageSearchVersion7 {
 
 			// 各画像URLに対してHTTPリクエストして保存する
 			int cnt = 0;
+			var que = new Queue<string>();
 			foreach (var obj in jsonObj["value"]) {
+				string url = obj["contentUrl"];
 				string format = obj["encodingFormat"];
-				Console.WriteLine(cnt + " " + format + " " + obj["contentUrl"]);
+
+				// 出力
+				Console.SetCursorPosition(0, Console.WindowTop);
+				Console.WriteLine("｜／―＼".Substring(cnt % 4, 1));
+				que.Enqueue(cnt + " " + format + " " + url);
+				if (que.Count > 20) que.Dequeue();
+				Console.WriteLine(string.Join("\n", que));
 				cnt += 1;
 			} //End_Foreach
 
