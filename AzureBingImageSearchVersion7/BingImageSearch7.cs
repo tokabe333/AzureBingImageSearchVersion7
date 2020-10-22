@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Net;
@@ -27,35 +28,47 @@ namespace AzureBingImageSearchVersion7 {
 		} //End_Constructor
 
 		public bool StartSearchAndDownload() {
+			int cnt = 1;
+
 			// 検索結果を取得
-			var result = this.Search();
+			var result = this.Search(0);
 			dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
+			int total = jsonObj["totalEstimatedMatches"];
 
 			// 各画像URLに対してHTTPリクエストして保存する
-			int cnt = 0;
 			var que = new Queue<string>();
-			foreach (var obj in jsonObj["value"]) {
-				string url = obj["contentUrl"];
-				string format = obj["encodingFormat"];
+			while (cnt < total) {
+				foreach (var obj in jsonObj["value"]) {
+					string url = obj["contentUrl"];
+					string format = obj["encodingFormat"];
 
-				// 出力
-				Console.SetCursorPosition(0, Console.WindowTop);
-				Console.WriteLine("｜／―＼".Substring(cnt % 4, 1));
-				que.Enqueue(cnt + " " + format + " " + url);
-				if (que.Count > 20) que.Dequeue();
-				Console.WriteLine(string.Join("\n", que));
-				cnt += 1;
-			} //End_Foreach
+					// 出力
+					Console.SetCursorPosition(0, Console.WindowTop);
+					Console.WriteLine(cnt + " / " + total + "｜／―＼".Substring(cnt % 4, 1) + " term:" + this.SearchTerm);
+					que.Enqueue(cnt + " " + format + " " + url);
+					if (que.Count > 20) que.Dequeue();
+					Console.WriteLine(string.Join("\n", que));
+					cnt += 1;
+				} //End_Foreach
+
+				// 次のオフセット
+				Thread.Sleep(500);
+				string next = jsonObj["nextOffset"];
+				result = this.Search(int.Parse(next));
+				jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
+				total = jsonObj["totalEstimatedMatches"];
+			} //End_While
 
 			return true;
 		} //End_Method
 
-		public SearchResult Search() {
+		public SearchResult Search(int offset) {
 			// クエリを生成してリクエストしてJSONレスポンスを得る
 			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm);
 			var request = WebRequest.Create(query);
 			request.Headers["Ocp-Apim-Subscription-Key"] = this.ApiKey;
 			request.Headers["Pragma"] = "no cache";
+			request.Headers["nextOffset"] = "" + offset;
 			var response = (HttpWebResponse)request.GetResponseAsync().Result;
 			var json = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
