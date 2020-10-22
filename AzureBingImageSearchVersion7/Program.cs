@@ -9,9 +9,9 @@ namespace AzureBingImageSearchVersion7 {
 		static void Main(string[] args) {
 			var commandOption = CommandLine.Parser.Default.ParseArguments<Options>(args) as CommandLine.Parsed<Options>;
 
-			var apikey = args[0];
-			var dir = args[1];
-			var term = args[2];
+			var apikey = commandOption.Value.ApiKey;
+			var dir = commandOption.Value.SaveDir;
+			var term = commandOption.Value.SearchTerm;
 			var bing = new BingImageSearch7(apikey, dir, term);
 			bing.StartSearchAndDownload();
 		} // End_Methods
