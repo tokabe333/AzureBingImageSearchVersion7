@@ -5,8 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace AzureBingImageSearchVersion7 {
-    class Program {
-        static void Main(string[] args) {
-        }
-    }
-} 
+    class BingImageSearch7 {
+    } //End_Class
+} //End_Namespace
+
