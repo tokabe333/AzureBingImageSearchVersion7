@@ -43,29 +43,44 @@ namespace AzureBingImageSearchVersion7 {
 			// 各画像URLに対してHTTPリクエストして保存する
 			while (cnt < total) {
 				var que = new Queue<string>();
+				int startCnt = cnt;
 				var tasks = new List<Task<bool>>();
 				foreach (var obj in jsonObj["value"]) {
 					string url = obj["contentUrl"];
 					string format = obj["encodingFormat"];
+					que.Enqueue(cnt + " " + format + " " + url);
 
 					// ダウンロードリスト作成
 					tasks.Add(DownloadFileAsync(url, format, cnt));
-
-					// 出力
-					Console.SetCursorPosition(0, Console.WindowTop);
-					Console.WriteLine("｜／―＼".Substring(cnt % 4, 1) + "  " + cnt + "/" + total + " term:" + this.SearchTerm);
-					que.Enqueue(cnt + " " + format + " " + url);
-					Console.WriteLine(string.Join("\n", que));
 					cnt += 1;
 				} //End_Foreach
 
-				// 全部のダウンロードが終わるまで待つ
+
+				// 全部のダウンロードが終わるまで待つ(待機中は表示して遊ぶ)
+				bool DisplayProgress(CancellationToken token) {
+					string ngo = string.Join("\n", que);
+					int displayCnt = 0;
+					while (!token.IsCancellationRequested) {
+						int finished = tasks.Count(unchi => unchi.IsCompleted);
+						Console.SetCursorPosition(0, 0);
+						Console.WriteLine("｜／―＼"[displayCnt % 4] + "  " + (startCnt + finished) + "/" + total + " term:" + this.SearchTerm);
+						Console.WriteLine(ngo);
+						Thread.Sleep(300);
+						displayCnt = displayCnt > 100 ? 0 : displayCnt += 1;
+					} // End_While
+					return true;
+				} // End_Method
+				var tokenSource = new CancellationTokenSource();
+				var cancelToken = tokenSource.Token;
+				var displayTask = Task.Run(() => DisplayProgress(cancelToken));
 				var resultBools = await Task.WhenAll(tasks.ToArray());
+				tokenSource.Cancel();
 				Console.WriteLine("†††バッチのダウンロード終了†††");
 
 				// 次のオフセット
 				Thread.Sleep(500);
 				string next = jsonObj["nextOffset"];
+				Console.WriteLine("NextOffset : " + next);
 				result = this.Search(int.Parse(next));
 				jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
 				total = jsonObj["totalEstimatedMatches"];
@@ -76,11 +91,13 @@ namespace AzureBingImageSearchVersion7 {
 
 		public SearchResult Search(int offset) {
 			// クエリを生成してリクエストしてJSONレスポンスを得る
-			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm);
+			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm) + "&offset=" + offset + "&count=" + 50;
 			var request = WebRequest.Create(query);
 			request.Headers["Ocp-Apim-Subscription-Key"] = this.ApiKey;
 			request.Headers["Pragma"] = "no cache";
-			request.Headers["nextOffset"] = "" + offset;
+			//request.Headers["currentOffset"] = "" + offset;
+			//request.Headers["offset"] = "" + offset;
+			//request.Headers["count"] = "" + 50;
 			var response = (HttpWebResponse)request.GetResponseAsync().Result;
 			var json = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
@@ -106,8 +123,10 @@ namespace AzureBingImageSearchVersion7 {
 					//wc.DownloadFileAsync(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
 					//wc.DownloadFile(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
 				} // End_Using
-			}catch(Exception e) {
-				Console.WriteLine("Falied to Download File:" + url);
+			} catch (Exception e) {
+				Console.ForegroundColor = ConsoleColor.Magenta;
+				Console.WriteLine("Falied to Download...  No." + cnt + " URL:" + url);
+				Console.ForegroundColor = ConsoleColor.White;
 				return false;
 			} // End_TryCacth
 			return true;
