@@ -4,9 +4,13 @@
 https://docs.microsoft.com/ja-jp/azure/cognitive-services/bing-image-search/quickstarts/csharp
 
 ### コマンドライン引数
-1. APIキー
-2. 保存先ディレクトリ
-3. 検索＆ダウンロードしたい画像名(Crow, Carboなど)
+| オプション名 | 概要 | 
+| --- | --- |
+| --key, -k | APIキー | 
+| --dir, -d | 保存先ディレクトリ | 
+| --term, -t | 検索ワード | 
+
+example → --key abcdefg1234567 --dir C:/Dataset --term Bird
 
 ### ResponseHeaders
 <img src="./Headers.png">
