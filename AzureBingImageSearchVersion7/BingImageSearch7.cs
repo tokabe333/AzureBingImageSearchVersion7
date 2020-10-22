@@ -27,22 +27,16 @@ namespace AzureBingImageSearchVersion7 {
 		public bool StartSearchAndDownload() {
 			// 検索結果を取得
 			var result = this.Search();
-
 			dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
 
-			int matchNum = jsonObj["totalEstimatedMatches"];
-			//int matchNum = jsonObj[5];
-			for(int i = 0; i < matchNum; ++i) {
-				var obj = jsonObj["value"][i];
-				Console.WriteLine("i:"+i+"  URL : " + obj["contentUrl"]);
-			} //End_For
+			// 各画像URLに対してHTTPリクエストして保存する
+			int cnt = 0;
+			foreach(var obj in jsonObj["value"]) {
+				string format = obj["encodingFormat"];
+				Console.WriteLine(cnt + " " + format + " " + obj["contentUrl"]);
+				cnt += 1;
+			} //End_Foreach
 
-			Console.WriteLine("matchNum:" + matchNum);
-
-			//var firstObj = jsonObj["value"][0];
-			//Console.WriteLine("Title : " + firstObj["name"]);
-			//Console.WriteLine("URL   : " + firstObj["webSearchUrl"]);
-			//Console.WriteLine("URLImg: " + firstObj["contentUrl"]);
 			return true;
 		} //End_Method
 
@@ -51,6 +45,7 @@ namespace AzureBingImageSearchVersion7 {
 			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm);
 			var request = WebRequest.Create(query);
 			request.Headers["Ocp-Apim-Subscription-Key"] = this.ApiKey;
+			request.Headers["Pragma"] = "no cache";
 			var response = (HttpWebResponse)request.GetResponseAsync().Result;
 			var json = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
