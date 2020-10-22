@@ -32,7 +32,7 @@ namespace AzureBingImageSearchVersion7 {
 			this.SaveDir += "\\" + this.SearchTerm;
 		} //End_Constructor
 
-		public bool StartSearchAndDownload() {
+		public async Task<bool> StartSearchAndDownload() {
 			int cnt = 1;
 
 			// 検索結果を取得
@@ -41,54 +41,27 @@ namespace AzureBingImageSearchVersion7 {
 			int total = jsonObj["totalEstimatedMatches"];
 
 			// 各画像URLに対してHTTPリクエストして保存する
-			var que = new Queue<string>();
 			while (cnt < total) {
+				var que = new Queue<string>();
+				var tasks = new List<Task<bool>>();
 				foreach (var obj in jsonObj["value"]) {
 					string url = obj["contentUrl"];
 					string format = obj["encodingFormat"];
 
-					// ダウンロード
-					try {
-						#region 過去の遺産
-						//var req = WebRequest.Create(url);
-						//req.Timeout = Timeout.Infinite;
-						//using (var imgStream = new MemoryStream())
-						////using (var reader = req.GetResponse().GetResponseStream())
-						////using (var st = new StreamReader(reader, Encoding.UTF8)) {
-						//using (var reader = new BinaryReader(req.GetResponse().GetResponseStream())) {
-						//	while (true) {
-						//		var buff = new byte[this.BuffSize];
-						//		int readBytes = reader.Read(buff, 0, this.BuffSize);
-						//		if (readBytes <= 0) { break; }
-						//		imgStream.Write(buff, 0, readBytes);
-						//	} // End_While
-
-
-						//	// 保存
-						//	using (var file = new FileStream(this.SaveDir + "\\" + cnt + "." + format, FileMode.Create, FileAccess.Write)) {
-						//		var bytes = new byte[imgStream.Length];
-						//		imgStream.Read(bytes, 0, (int)imgStream.Length);
-						//		file.Write(bytes, 0, bytes.Length);
-						//	} //End_Using
-						//} // End_Using
-						#endregion
-
-						using (var wc = new WebClient()) {
-							//wc.DownloadFileAsync(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
-							wc.DownloadFile(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
-						}
-					} catch (Exception e) {
-						Console.WriteLine("接続エラーとかHTTPSエラーとか");
-					} //End_TryCatch
+					// ダウンロードリスト作成
+					tasks.Add(DownloadFileAsync(url, format, cnt));
 
 					// 出力
 					Console.SetCursorPosition(0, Console.WindowTop);
 					Console.WriteLine("｜／―＼".Substring(cnt % 4, 1) + "  " + cnt + "/" + total + " term:" + this.SearchTerm);
 					que.Enqueue(cnt + " " + format + " " + url);
-					if (que.Count > 20) que.Dequeue();
 					Console.WriteLine(string.Join("\n", que));
 					cnt += 1;
 				} //End_Foreach
+
+				// 全部のダウンロードが終わるまで待つ
+				var resultBools = await Task.WhenAll(tasks.ToArray());
+				Console.WriteLine("†††バッチのダウンロード終了†††");
 
 				// 次のオフセット
 				Thread.Sleep(500);
@@ -123,8 +96,22 @@ namespace AzureBingImageSearchVersion7 {
 			} // End_Foreach
 
 			return result;
-		} //End_Method
+		} // End_Method
 
+		private async Task<bool> DownloadFileAsync(string url, string format, int cnt) {
+			try {
+				using (var wc = new WebClient()) {
+					wc.Credentials = CredentialCache.DefaultNetworkCredentials;
+					await wc.DownloadFileTaskAsync(new Uri(url), this.SaveDir + "\\" + cnt + "." + format);
+					//wc.DownloadFileAsync(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
+					//wc.DownloadFile(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
+				} // End_Using
+			}catch(Exception e) {
+				Console.WriteLine("Falied to Download File:" + url);
+				return false;
+			} // End_TryCacth
+			return true;
+		} //End_Method
 	} //End_Class
 } //End_Namespace
 

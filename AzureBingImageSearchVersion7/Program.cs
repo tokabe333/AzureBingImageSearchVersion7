@@ -12,9 +12,14 @@ namespace AzureBingImageSearchVersion7 {
 			var apikey = commandOption.Value.ApiKey;
 			var dir = commandOption.Value.SaveDir;
 			var term = commandOption.Value.SearchTerm;
-			var bing = new BingImageSearch7(apikey, dir, term);
-			bing.StartSearchAndDownload();
+
+			Do(apikey, dir, term).GetAwaiter().GetResult();
 		} // End_Methods
+
+		static async Task<bool> Do(string key, string dir, string term) {
+			var bing = new BingImageSearch7(key, dir, term);
+			return await bing.StartSearchAndDownload();
+		} //End_Method
 	} // End_Class
 
 	class Options {
