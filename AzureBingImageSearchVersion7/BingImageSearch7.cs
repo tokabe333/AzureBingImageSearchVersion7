@@ -29,10 +29,20 @@ namespace AzureBingImageSearchVersion7 {
 			var result = this.Search();
 
 			dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(result.JsonResult);
-			var firstObj = jsonObj["value"][0];
-			Console.WriteLine("Title : " + firstObj["name"]);
-			Console.WriteLine("URL   : " + firstObj["webSearchUrl"]);
-			Console.WriteLine("URLImg: " + firstObj["contentUrl"]);
+
+			int matchNum = jsonObj["totalEstimatedMatches"];
+			//int matchNum = jsonObj[5];
+			for(int i = 0; i < matchNum; ++i) {
+				var obj = jsonObj["value"][i];
+				Console.WriteLine("i:"+i+"  URL : " + obj["contentUrl"]);
+			} //End_For
+
+			Console.WriteLine("matchNum:" + matchNum);
+
+			//var firstObj = jsonObj["value"][0];
+			//Console.WriteLine("Title : " + firstObj["name"]);
+			//Console.WriteLine("URL   : " + firstObj["webSearchUrl"]);
+			//Console.WriteLine("URLImg: " + firstObj["contentUrl"]);
 			return true;
 		} //End_Method
 
