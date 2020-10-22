@@ -12,18 +12,20 @@ namespace AzureBingImageSearchVersion7 {
 		private const string UriBase = "https://api.cognitive.microsoft.com/bing/v7.0/images/search";
 		private string SearchTerm = null;
 		private string ApiKey = null;
+		private string SaveDir = null;
 
 		public struct SearchResult {
 			public string JsonResult;
 			public Dictionary<string, string> RelevantHeaders;
 		} //End_Struct
-		
 
-		public BingImageSearch7(string apiKey, string searchTerm) {
+
+		public BingImageSearch7(string apiKey, string saveDir, string searchTerm) {
 			this.ApiKey = apiKey;
+			this.SaveDir = saveDir;
 			this.SearchTerm = searchTerm;
 		} //End_Constructor
-		
+
 		public bool StartSearchAndDownload() {
 			// 検索結果を取得
 			var result = this.Search();
@@ -31,7 +33,7 @@ namespace AzureBingImageSearchVersion7 {
 
 			// 各画像URLに対してHTTPリクエストして保存する
 			int cnt = 0;
-			foreach(var obj in jsonObj["value"]) {
+			foreach (var obj in jsonObj["value"]) {
 				string format = obj["encodingFormat"];
 				Console.WriteLine(cnt + " " + format + " " + obj["contentUrl"]);
 				cnt += 1;
@@ -54,7 +56,7 @@ namespace AzureBingImageSearchVersion7 {
 				JsonResult = json,
 				RelevantHeaders = new Dictionary<string, string>()
 			};
-			foreach(string header in response.Headers) {
+			foreach (string header in response.Headers) {
 				if (header.StartsWith("BingAPIs-") || header.StartsWith("X-MSEdge-")) {
 					result.RelevantHeaders[header] = response.Headers[header];
 				} // End_If
@@ -62,7 +64,7 @@ namespace AzureBingImageSearchVersion7 {
 
 			return result;
 		} //End_Method
-		
+
 	} //End_Class
 } //End_Namespace
 
