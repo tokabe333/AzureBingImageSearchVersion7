@@ -14,6 +14,7 @@ namespace AzureBingImageSearchVersion7 {
 		private string SearchTerm = null;
 		private string ApiKey = null;
 		private string SaveDir = null;
+		private int BuffSize = 65536;
 
 		public struct SearchResult {
 			public string JsonResult;
@@ -25,6 +26,10 @@ namespace AzureBingImageSearchVersion7 {
 			this.ApiKey = apiKey;
 			this.SaveDir = saveDir;
 			this.SearchTerm = searchTerm;
+
+			// ディレクトリ作成
+			Directory.CreateDirectory(this.SaveDir + "\\" + this.SearchTerm);
+			this.SaveDir += "\\" + this.SearchTerm;
 		} //End_Constructor
 
 		public bool StartSearchAndDownload() {
@@ -42,9 +47,43 @@ namespace AzureBingImageSearchVersion7 {
 					string url = obj["contentUrl"];
 					string format = obj["encodingFormat"];
 
+					// ダウンロード
+					try {
+						#region 過去の遺産
+						//var req = WebRequest.Create(url);
+						//req.Timeout = Timeout.Infinite;
+						//using (var imgStream = new MemoryStream())
+						////using (var reader = req.GetResponse().GetResponseStream())
+						////using (var st = new StreamReader(reader, Encoding.UTF8)) {
+						//using (var reader = new BinaryReader(req.GetResponse().GetResponseStream())) {
+						//	while (true) {
+						//		var buff = new byte[this.BuffSize];
+						//		int readBytes = reader.Read(buff, 0, this.BuffSize);
+						//		if (readBytes <= 0) { break; }
+						//		imgStream.Write(buff, 0, readBytes);
+						//	} // End_While
+
+
+						//	// 保存
+						//	using (var file = new FileStream(this.SaveDir + "\\" + cnt + "." + format, FileMode.Create, FileAccess.Write)) {
+						//		var bytes = new byte[imgStream.Length];
+						//		imgStream.Read(bytes, 0, (int)imgStream.Length);
+						//		file.Write(bytes, 0, bytes.Length);
+						//	} //End_Using
+						//} // End_Using
+						#endregion
+
+						using (var wc = new WebClient()) {
+							//wc.DownloadFileAsync(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
+							wc.DownloadFile(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
+						}
+					} catch (Exception e) {
+						Console.WriteLine("接続エラーとかHTTPSエラーとか");
+					} //End_TryCatch
+
 					// 出力
 					Console.SetCursorPosition(0, Console.WindowTop);
-					Console.WriteLine(cnt + " / " + total + "｜／―＼".Substring(cnt % 4, 1) + " term:" + this.SearchTerm);
+					Console.WriteLine("｜／―＼".Substring(cnt % 4, 1) + "  " + cnt + "/" + total + " term:" + this.SearchTerm);
 					que.Enqueue(cnt + " " + format + " " + url);
 					if (que.Count > 20) que.Dequeue();
 					Console.WriteLine(string.Join("\n", que));
