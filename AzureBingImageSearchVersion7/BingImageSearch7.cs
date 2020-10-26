@@ -15,6 +15,8 @@ namespace AzureBingImageSearchVersion7 {
 		private string ApiKey = null;
 		private string SaveDir = null;
 		private int BuffSize = 65536;
+		private Queue<string> Que = null;
+		private Queue<string> ErrQue = null;
 
 		public struct SearchResult {
 			public string JsonResult;
@@ -42,13 +44,14 @@ namespace AzureBingImageSearchVersion7 {
 
 			// 各画像URLに対してHTTPリクエストして保存する
 			while (cnt < total) {
-				var que = new Queue<string>();
+				this.Que = new Queue<string>();
+				this.ErrQue = new Queue<string>();
 				int startCnt = cnt;
 				var tasks = new List<Task<bool>>();
 				foreach (var obj in jsonObj["value"]) {
 					string url = obj["contentUrl"];
 					string format = obj["encodingFormat"];
-					que.Enqueue(cnt + " " + format + " " + url);
+					this.Que.Enqueue(cnt + " " + format + " " + url);
 
 					// ダウンロードリスト作成
 					tasks.Add(DownloadFileAsync(url, format, cnt));
@@ -58,27 +61,32 @@ namespace AzureBingImageSearchVersion7 {
 
 				// 全部のダウンロードが終わるまで待つ(待機中は表示して遊ぶ)
 				bool DisplayProgress(CancellationToken token) {
-					string ngo = string.Join("\n", que);
+					string ngo = string.Join("\n", this.Que);
 					int displayCnt = 0;
 					while (!token.IsCancellationRequested) {
 						int finished = tasks.Count(unchi => unchi.IsCompleted);
 						Console.SetCursorPosition(0, 0);
-						Console.WriteLine("｜／―＼"[displayCnt % 4] + "  " + (startCnt + finished) + "/" + total + " term:" + this.SearchTerm);
+						Console.WriteLine("｜／―＼"[displayCnt] + "  " + (startCnt + finished) + "/" + total + " term:" + this.SearchTerm);
 						Console.WriteLine(ngo);
+						Console.ForegroundColor = ConsoleColor.Magenta;
+						Console.WriteLine(string.Join("\n", this.ErrQue));
+						Console.ForegroundColor = ConsoleColor.White;
 						Thread.Sleep(300);
-						displayCnt = displayCnt > 100 ? 0 : displayCnt += 1;
+						displayCnt = displayCnt >= 3 ? 0 : displayCnt += 1;
 					} // End_While
 					return true;
 				} // End_Method
 				var tokenSource = new CancellationTokenSource();
 				var cancelToken = tokenSource.Token;
+				Console.Clear();
 				var displayTask = Task.Run(() => DisplayProgress(cancelToken));
 				var resultBools = await Task.WhenAll(tasks.ToArray());
 				tokenSource.Cancel();
+				Thread.Sleep(500);
+				Console.ForegroundColor = ConsoleColor.White;
 				Console.WriteLine("†††バッチのダウンロード終了†††");
 
 				// 次のオフセット
-				Thread.Sleep(500);
 				string next = jsonObj["nextOffset"];
 				Console.WriteLine("NextOffset : " + next);
 				result = this.Search(int.Parse(next));
@@ -91,7 +99,7 @@ namespace AzureBingImageSearchVersion7 {
 
 		public SearchResult Search(int offset) {
 			// クエリを生成してリクエストしてJSONレスポンスを得る
-			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm) + "&offset=" + offset + "&count=" + 50;
+			var query = BingImageSearch7.UriBase + "?q=" + Uri.EscapeDataString(this.SearchTerm) + "&offset=" + offset + "&count=" + 20;
 			var request = WebRequest.Create(query);
 			request.Headers["Ocp-Apim-Subscription-Key"] = this.ApiKey;
 			request.Headers["Pragma"] = "no cache";
@@ -124,13 +132,24 @@ namespace AzureBingImageSearchVersion7 {
 					//wc.DownloadFile(new System.Uri(url), this.SaveDir + "\\" + cnt + "." + format);
 				} // End_Using
 			} catch (Exception e) {
-				Console.ForegroundColor = ConsoleColor.Magenta;
-				Console.WriteLine("Falied to Download...  No." + cnt + " URL:" + url);
-				Console.ForegroundColor = ConsoleColor.White;
+				this.ErrQue.Enqueue("Falied to Download...  No." + cnt + " URL:" + url);
+				//Console.ForegroundColor = ConsoleColor.Magenta;
+				//Console.WriteLine("Falied to Download...  No." + cnt + " URL:" + url);
+				//Console.ForegroundColor = ConsoleColor.White;
 				return false;
 			} // End_TryCacth
 			return true;
 		} //End_Method
+
+		private void ClearConsole() {
+			Console.SetCursorPosition(0, 0);
+			string str = "";
+			for (int i = 0; i < 100; ++i) {
+				for (int j = 0; j < 400; ++j) str += " ";
+				str += "\n";
+			} // End_For
+			Console.WriteLine(str);
+		} // End_Method
 	} //End_Class
 } //End_Namespace
 
