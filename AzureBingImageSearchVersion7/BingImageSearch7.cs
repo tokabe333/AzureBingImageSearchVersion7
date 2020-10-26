@@ -80,7 +80,7 @@ namespace AzureBingImageSearchVersion7 {
 				var cancelToken = tokenSource.Token;
 				Console.Clear();
 				var displayTask = Task.Run(() => DisplayProgress(cancelToken));
-				var resultBools = await Task.WhenAll(tasks.ToArray());
+				var resultBools = await Task.WhenAny(Task.WhenAll(tasks.ToArray()), Task.Delay(TimeSpan.FromSeconds(300)));
 				tokenSource.Cancel();
 				Console.ForegroundColor = ConsoleColor.White;
 				Console.WriteLine("†††バッチのダウンロード終了†††");
@@ -103,9 +103,6 @@ namespace AzureBingImageSearchVersion7 {
 			var request = WebRequest.Create(query);
 			request.Headers["Ocp-Apim-Subscription-Key"] = this.ApiKey;
 			request.Headers["Pragma"] = "no cache";
-			//request.Headers["currentOffset"] = "" + offset;
-			//request.Headers["offset"] = "" + offset;
-			//request.Headers["count"] = "" + 50;
 			var response = (HttpWebResponse)request.GetResponseAsync().Result;
 			var json = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
@@ -122,7 +119,7 @@ namespace AzureBingImageSearchVersion7 {
 
 			return result;
 		} // End_Method
-
+		
 		private async Task<bool> DownloadFileAsync(string url, string format, int cnt) {
 			try {
 				using (var wc = new WebClient()) {
