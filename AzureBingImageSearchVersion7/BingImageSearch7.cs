@@ -82,9 +82,9 @@ namespace AzureBingImageSearchVersion7 {
 				var displayTask = Task.Run(() => DisplayProgress(cancelToken));
 				var resultBools = await Task.WhenAll(tasks.ToArray());
 				tokenSource.Cancel();
-				Thread.Sleep(500);
 				Console.ForegroundColor = ConsoleColor.White;
 				Console.WriteLine("†††バッチのダウンロード終了†††");
+				Thread.Sleep(500);
 
 				// 次のオフセット
 				string next = jsonObj["nextOffset"];
